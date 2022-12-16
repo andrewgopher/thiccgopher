@@ -1,8 +1,8 @@
 package game
 
-type Piece int8
+type Piece = int8
 
-type Side int8
+type Side = int8
 
 //piece & White/Black to check if piece is White/Blac
 
@@ -28,11 +28,12 @@ var (
 )
 
 type State struct {
-	SideToMove   Side
-	Board        [8][8]Piece
-	CastleRights [2][2]bool
-	FiftyCount   int
-	MoveCount    int
+	SideToMove      Side
+	Board           [8][8]Piece
+	CastleRights    [2][2]bool
+	FiftyCount      int
+	MoveCount       int
+	EnPassantSquare *Pos
 }
 
 func NewState() *State {
@@ -49,5 +50,6 @@ func NewState() *State {
 	state.CastleRights = [2][2]bool{{true, true}, {true, true}}
 	state.FiftyCount = 0
 	state.MoveCount = 1
+	state.EnPassantSquare = nil
 	return state
 }

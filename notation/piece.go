@@ -2,7 +2,7 @@ package notation
 
 import "thiccgopher/game"
 
-var LetterToPiece map[byte]game.Piece = map[byte]game.Piece{
+var ByteToPiece map[byte]game.Piece = map[byte]game.Piece{
 	'p': game.BlackPawn,
 	'n': game.BlackKnight,
 	'b': game.BlackBishop,

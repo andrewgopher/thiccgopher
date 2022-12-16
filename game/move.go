@@ -6,7 +6,7 @@ type Pos struct {
 }
 
 type Move struct {
-	Start     Pos
-	End       Pos
+	Start     *Pos
+	End       *Pos
 	Promotion Piece
 }

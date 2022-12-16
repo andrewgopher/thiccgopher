@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var name = "thiccgopher"
 var author = "andrewgopher"
@@ -37,5 +39,4 @@ func main() {
 
 	//GUI options done
 	fmt.Println("readyok")
-
 }
