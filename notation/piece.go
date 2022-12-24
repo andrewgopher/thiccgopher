@@ -16,3 +16,18 @@ var ByteToPiece map[byte]game.Piece = map[byte]game.Piece{
 	'Q': game.WhiteQueen,
 	'K': game.WhiteKing,
 }
+
+var PieceToByte map[byte]game.Piece = map[byte]game.Piece{
+	game.BlackPawn:   'p',
+	game.BlackKnight: 'n',
+	game.BlackBishop: 'b',
+	game.BlackRook:   'r',
+	game.BlackQueen:  'q',
+	game.BlackKing:   'k',
+	game.WhitePawn:   'P',
+	game.WhiteKnight: 'N',
+	game.WhiteBishop: 'B',
+	game.WhiteRook:   'R',
+	game.WhiteQueen:  'Q',
+	game.WhiteKing:   'K',
+}

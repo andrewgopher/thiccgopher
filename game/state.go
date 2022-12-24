@@ -1,39 +1,90 @@
 package game
 
-type Piece = int8
+type Piece = uint8
 
-type Side = int8
+type Side = uint8
 
-//piece & White/Black to check if piece is White/Blac
+type CastleRight = uint8
 
-var White Side = 8
-var Black Side = 16
+//piece & White/Black to check if piece is White/Black
 
-var (
+const (
+	White Side = 64
+	Black Side = 128
+)
+
+const (
+	WhiteKingSide CastleRight = 1 << iota
+	WhiteQueenSide
+	BlackKingSide
+	BlackQueenSide
+)
+
+func OppSide(side Side) Side {
+	if side == White {
+		return Black
+	} else {
+		return White
+	}
+}
+
+const (
 	NilPiece Piece = 0
 
-	WhitePawn   Piece = 9
-	WhiteKnight Piece = 10
-	WhiteBishop Piece = 11
-	WhiteRook   Piece = 12
-	WhiteQueen  Piece = 13
-	WhiteKing   Piece = 14
+	Pawn   Piece = 1
+	Knight Piece = 2
+	Bishop Piece = 4
+	Rook   Piece = 8
+	Queen  Piece = 16
+	King   Piece = 32
 
-	BlackPawn   Piece = 17
-	BlackKnight Piece = 18
-	BlackBishop Piece = 19
-	BlackRook   Piece = 20
-	BlackQueen  Piece = 21
-	BlackKing   Piece = 22
+	WhitePawn   Piece = Pawn | White
+	WhiteKnight Piece = Knight | White
+	WhiteBishop Piece = Bishop | White
+	WhiteRook   Piece = Rook | White
+	WhiteQueen  Piece = Queen | White
+	WhiteKing   Piece = King | White
+
+	BlackPawn   Piece = Pawn | Black
+	BlackKnight Piece = Knight | Black
+	BlackBishop Piece = Bishop | Black
+	BlackRook   Piece = Rook | Black
+	BlackQueen  Piece = Queen | Black
+	BlackKing   Piece = King | Black
 )
 
 type State struct {
 	SideToMove      Side
 	Board           [8][8]Piece
-	CastleRights    [2][2]bool
+	CastleRights    CastleRight
 	FiftyCount      int
 	MoveCount       int
 	EnPassantSquare *Pos
+
+	PieceLists [2][]Pos
+	KingPos    [2]Pos
+}
+
+func (state *State) GenPieceLists() {
+	state.PieceLists = [2][]Pos{}
+	for i := 0; i < 8; i++ {
+		for j := 0; j < 8; j++ {
+			if state.Board[i][j] != NilPiece {
+				if state.Board[i][j]&White > 0 {
+					state.PieceLists[0] = append(state.PieceLists[0], Pos{i, j})
+				} else {
+					state.PieceLists[1] = append(state.PieceLists[1], Pos{i, j})
+				}
+			}
+			if state.Board[i][j]&King > 0 {
+				if state.Board[i][j]&White > 0 {
+					state.KingPos[0] = Pos{i, j}
+				} else {
+					state.KingPos[1] = Pos{i, j}
+				}
+			}
+		}
+	}
 }
 
 func NewState() *State {
@@ -47,9 +98,11 @@ func NewState() *State {
 		{NilPiece, NilPiece, NilPiece, NilPiece, NilPiece, NilPiece, NilPiece, NilPiece},
 		{WhitePawn, WhitePawn, WhitePawn, WhitePawn, WhitePawn, WhitePawn, WhitePawn, WhitePawn},
 		{WhiteRook, WhiteKnight, WhiteBishop, WhiteQueen, WhiteKing, WhiteBishop, WhiteKnight, WhiteRook}}
-	state.CastleRights = [2][2]bool{{true, true}, {true, true}}
+	state.CastleRights = WhiteKingSide | WhiteQueenSide | BlackKingSide | BlackQueenSide
 	state.FiftyCount = 0
 	state.MoveCount = 1
 	state.EnPassantSquare = nil
+
+	state.GenPieceLists()
 	return state
 }

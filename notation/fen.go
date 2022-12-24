@@ -25,7 +25,21 @@ func ParseFenString(fen string) *game.State {
 
 	state.SideToMove = ByteToSide[args[1][0]]
 
-	state.CastleRights = [2][2]bool{{strings.Contains(args[2], "K"), strings.Contains(args[2], "Q")}, {strings.Contains(args[3], "k"), strings.Contains(args[3], "q")}}
+	state.CastleRights = 0
+
+	if strings.Contains(args[2], "K") {
+		state.CastleRights |= game.WhiteKingSide
+	}
+	if strings.Contains(args[2], "Q") {
+		state.CastleRights |= game.WhiteQueenSide
+	}
+	if strings.Contains(args[2], "k") {
+		state.CastleRights |= game.BlackKingSide
+	}
+	if strings.Contains(args[2], "q") {
+		state.CastleRights |= game.BlackQueenSide
+	}
+
 	state.EnPassantSquare = nil
 	if args[3] != "-" {
 		state.EnPassantSquare = ParseSquareString(args[3])
@@ -35,5 +49,6 @@ func ParseFenString(fen string) *game.State {
 
 	state.MoveCount, _ = strconv.Atoi(args[5])
 
+	state.GenPieceLists()
 	return state
 }
