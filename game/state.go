@@ -9,9 +9,12 @@ type CastleRight = uint8
 //piece & White/Black to check if piece is White/Black
 
 const (
-	White Side = 64
-	Black Side = 128
+	NilSide Side = 0
+	White   Side = 64
+	Black   Side = 128
 )
+
+var Sides [2]Side = [2]Side{White, Black}
 
 const (
 	WhiteKingSide CastleRight = 1 << iota
@@ -26,6 +29,14 @@ func OppSide(side Side) Side {
 	} else {
 		return White
 	}
+}
+
+func PieceSide(piece Piece) Side {
+	return (piece & White) | (piece & Black)
+}
+
+func PieceOnly(piece Piece) Piece {
+	return piece & (^White) & (^Black)
 }
 
 const (
@@ -54,12 +65,12 @@ const (
 )
 
 type State struct {
-	SideToMove      Side
-	Board           [8][8]Piece
-	CastleRights    CastleRight
-	FiftyCount      int
-	MoveCount       int
-	EnPassantSquare *Pos
+	SideToMove   Side
+	Board        [8][8]Piece
+	CastleRights CastleRight
+	FiftyCount   int
+	MoveCount    int
+	EnPassantPos *Pos
 
 	PieceLists [2][]Pos
 	KingPos    [2]Pos
@@ -101,7 +112,7 @@ func NewState() *State {
 	state.CastleRights = WhiteKingSide | WhiteQueenSide | BlackKingSide | BlackQueenSide
 	state.FiftyCount = 0
 	state.MoveCount = 1
-	state.EnPassantSquare = nil
+	state.EnPassantPos = nil
 
 	state.GenPieceLists()
 	return state

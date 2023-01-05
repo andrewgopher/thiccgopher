@@ -5,8 +5,8 @@ import (
 	"thiccgopher/game"
 )
 
-func ParseSquareString(squareString string) *game.Pos {
-	return &game.Pos{RankToInt(squareString[1]), FileToInt(squareString[0])}
+func ParsePosString(posString string) *game.Pos {
+	return &game.Pos{RankToInt(posString[1]), FileToInt(posString[0])}
 }
 
 func ParseMoveString(moveString string, side game.Side) *game.Move {
@@ -19,7 +19,7 @@ func ParseMoveString(moveString string, side game.Side) *game.Move {
 	return &move
 }
 
-func MoveToFenString(move *game.Move) string {
+func MoveToUCIString(move *game.Move) string {
 	result := fmt.Sprintf("%v%v%v%v", string(IntToFile(move.Start.Y)), string(IntToRank(move.Start.X)), string(IntToFile(move.End.Y)), string(IntToRank(move.End.X)))
 
 	if move.Promotion != game.NilPiece {

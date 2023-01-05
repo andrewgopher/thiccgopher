@@ -40,9 +40,14 @@ func ParseFenString(fen string) *game.State {
 		state.CastleRights |= game.BlackQueenSide
 	}
 
-	state.EnPassantSquare = nil
+	state.EnPassantPos = nil
 	if args[3] != "-" {
-		state.EnPassantSquare = ParseSquareString(args[3])
+		state.EnPassantPos = ParsePosString(args[3])
+		if state.SideToMove == game.White {
+			state.EnPassantPos.X += 1
+		} else {
+			state.EnPassantPos.X -= 1
+		}
 	}
 
 	state.FiftyCount, _ = strconv.Atoi(args[4])
