@@ -18,7 +18,7 @@ var PieceValues map[game.Piece]int = map[game.Piece]int{
 }
 
 func GetKingStatus(state *game.State, side game.Side) (bool, bool) {
-	kingPos := state.KingPos[game.SideToInd(side)]
+	kingPos := state.KingPos[game.SideToInd[side]]
 	oppSide := game.OppSide(game.PieceSide(state.Board[kingPos.X][kingPos.Y]))
 	isInCheck := state.IsAttacked(kingPos, oppSide)
 	isSurrounded /*by check*/ := true
@@ -46,7 +46,7 @@ func Eval(state *game.State) (int, bool) { //int is eval, bool is if decisive
 	}
 
 	if numMoves == 0 {
-		isOppInCheck := state.IsAttacked(state.KingPos[game.SideToInd(game.OppSide(side))], side)
+		isOppInCheck := state.IsAttacked(state.KingPos[game.SideToInd[game.OppSide(side)]], side)
 
 		if !isOppInCheck { //stalemate
 			return 0, true
@@ -69,7 +69,7 @@ func Eval(state *game.State) (int, bool) { //int is eval, bool is if decisive
 
 	pieceMapEval := 0
 	for _, side := range game.Sides {
-		for _, p := range state.PieceLists[game.SideToInd(side)] {
+		for _, p := range state.PieceLists[game.SideToInd[side]] {
 			rank := p.X
 			if side == game.Black {
 				rank = 7 - p.X

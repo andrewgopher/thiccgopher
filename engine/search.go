@@ -2,55 +2,57 @@ package engine
 
 import (
 	"sort"
+	"thiccgopher/boolwrapper"
 	"thiccgopher/game"
+	"thiccgopher/hash"
 	"thiccgopher/sliceutils"
-	"time"
 )
 
-func Search(state *game.State, timeLimit time.Duration) *game.Move {
+type pvEntry struct {
+	move  *game.Move
+	depth int
+}
+
+var PVS map[uint64]*pvEntry = make(map[uint64]*pvEntry)
+
+func IterativeDeepening(state *game.State, moveChan chan *game.Move, isSearching *boolwrapper.BoolWrapper) {
 	currDepth := 2
 	moves := state.GenMoves()
-	startTime := time.Now()
 	var bestMove *game.Move
-
-	var prevSearchDuration time.Duration
-	var prevPrevSearchDuration time.Duration
-
-	for time.Since(startTime) < timeLimit && (prevPrevSearchDuration == 0 || prevSearchDuration == 0 || timeLimit-time.Since(startTime) >= prevSearchDuration*prevSearchDuration/prevPrevSearchDuration) {
-		currSearchStartTime := time.Now()
-
-		bestMove = nil
+	for {
+		_, bestMove = Minimax(state, currDepth, -BigEval, BigEval, isSearching)
+		if !isSearching.Val {
+			return
+		}
 		var bestMoveInd int
-		bestEval := -BigEval
-		for i, m := range moves {
-			capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights := state.RunMove(m)
-			currScore := -Minimax(state, currDepth-1, -BigEval, -bestEval)
-			if currScore > bestEval {
-				bestEval = currScore
-				bestMove = m
+		for i := range moves {
+			if moves[i] == bestMove {
 				bestMoveInd = i
 			}
-			state.ReverseMove(m, capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights)
 		}
 
 		moves = sliceutils.RemoveByIndex(moves, bestMoveInd)
 		moves = append([]*game.Move{bestMove}, moves...)
-
-		prevPrevSearchDuration = prevSearchDuration
-		prevSearchDuration = time.Since(currSearchStartTime)
-
+		moveChan <- bestMove
 		currDepth++
 	}
-	return bestMove
 }
 
-func Minimax(state *game.State, depth int, alpha, beta int) int {
+func Minimax(state *game.State, depth int, alpha, beta int, isSearching *boolwrapper.BoolWrapper) (int, *game.Move) {
 	currSide := state.SideToMove
-	moves := state.GenMoves()
+	currHash := hash.Hash(state)
+	moves := []*game.Move{}
+
+	pv, hasStoredPV := PVS[currHash]
+	if hasStoredPV {
+		moves = append(moves, pv.move)
+	}
+	moves = append(moves, state.GenMoves()...)
 
 	bestEval := -BigEval
+	var bestMove *game.Move = nil
 	if len(moves) == 0 {
-		if state.IsAttacked(state.KingPos[game.SideToInd(currSide)], game.OppSide(currSide)) {
+		if state.IsAttacked(state.KingPos[game.SideToInd[currSide]], game.OppSide(currSide)) {
 			bestEval = -CheckmateEval
 		} else {
 			bestEval = 0
@@ -67,11 +69,15 @@ func Minimax(state *game.State, depth int, alpha, beta int) int {
 		if depth == 1 {
 			currOppEval, _ = Eval(state) //evaluates in the pov of opponent
 		} else {
-			currOppEval = Minimax(state, depth-1, -beta, -alpha) //evaluates in the pov of opponent
+			currOppEval, _ = Minimax(state, depth-1, -beta, -alpha, isSearching) //evaluates in the pov of opponent
+		}
+		if !isSearching.Val {
+			return 0, nil
 		}
 		currEval := -currOppEval
 		if currEval > bestEval {
 			bestEval = currEval
+			bestMove = m
 		}
 		if bestEval > alpha {
 			alpha = bestEval
@@ -87,5 +93,8 @@ func Minimax(state *game.State, depth int, alpha, beta int) int {
 	if bestEval < -CheckmateEvalSplit {
 		bestEval += 1
 	}
-	return bestEval
+	if hasStoredPV && depth > pv.depth {
+		PVS[currHash] = &pvEntry{bestMove, depth}
+	}
+	return bestEval, bestMove
 }

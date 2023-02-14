@@ -17,14 +17,6 @@ var (
 	QueenSideDir = -1
 )
 
-func SideToInd(s Side) int {
-	if s == White {
-		return 0
-	} else {
-		return 1
-	}
-}
-
 func IsOnBoard(p Pos) bool {
 	return p.X >= 0 && p.Y >= 0 && p.X < 8 && p.Y < 8
 }
@@ -91,7 +83,7 @@ func (state *State) IsAttacked(p Pos, oppSide Side) bool {
 func (state *State) GenPseudoMoves() []*Move { //allows the king to be in check
 	moves := []*Move{}
 
-	var selfPieceList []Pos = state.PieceLists[SideToInd(state.SideToMove)]
+	var selfPieceList []Pos = state.PieceLists[SideToInd[state.SideToMove]]
 	var pawnDirection int
 	var pawnStartRank int
 	var pawnPromotionRank int
@@ -245,17 +237,17 @@ func (state *State) RunMove(move *Move) (Piece, bool, int, *Pos, uint8) {
 
 	//piece lists
 	if capturedPiece != NilPiece {
-		for i, p := range state.PieceLists[SideToInd(oppSide)] {
+		for i, p := range state.PieceLists[SideToInd[oppSide]] {
 			if p == capturedPos {
-				state.PieceLists[SideToInd(oppSide)] = sliceutils.RemoveByIndex(state.PieceLists[SideToInd(oppSide)], i)
+				state.PieceLists[SideToInd[oppSide]] = sliceutils.RemoveByIndex(state.PieceLists[SideToInd[oppSide]], i)
 				break
 			}
 		}
 	}
 
-	for i, p := range state.PieceLists[SideToInd(selfSide)] {
+	for i, p := range state.PieceLists[SideToInd[selfSide]] {
 		if p == move.Start {
-			state.PieceLists[SideToInd(selfSide)][i] = move.End
+			state.PieceLists[SideToInd[selfSide]][i] = move.End
 			break
 		}
 	}
@@ -280,7 +272,7 @@ func (state *State) RunMove(move *Move) (Piece, bool, int, *Pos, uint8) {
 
 	//king pos
 	if selfStartPiece&King > 0 {
-		state.KingPos[SideToInd(selfSide)] = move.End
+		state.KingPos[SideToInd[selfSide]] = move.End
 	}
 
 	//castle rights
@@ -345,9 +337,9 @@ func (state *State) RunMove(move *Move) (Piece, bool, int, *Pos, uint8) {
 			}
 			state.Board[newRookPos.X][newRookPos.Y] = state.Board[rookPos.X][rookPos.Y]
 			state.Board[rookPos.X][rookPos.Y] = NilPiece
-			for i, p := range state.PieceLists[SideToInd(selfSide)] {
+			for i, p := range state.PieceLists[SideToInd[selfSide]] {
 				if p == rookPos {
-					state.PieceLists[SideToInd(selfSide)][i] = newRookPos
+					state.PieceLists[SideToInd[selfSide]][i] = newRookPos
 					break
 				}
 			}
@@ -391,9 +383,9 @@ func (state *State) ReverseMove(move *Move, capturedPiece Piece, isEnPassant boo
 
 	//piece lists
 
-	for i, p := range state.PieceLists[SideToInd(selfSide)] {
+	for i, p := range state.PieceLists[SideToInd[selfSide]] {
 		if p == move.End {
-			state.PieceLists[SideToInd(selfSide)][i] = move.Start
+			state.PieceLists[SideToInd[selfSide]][i] = move.Start
 			break
 		}
 	}
@@ -407,7 +399,7 @@ func (state *State) ReverseMove(move *Move, capturedPiece Piece, isEnPassant boo
 			capturedPos = Pos{move.End.X - pawnDirection, move.End.Y}
 		}
 
-		state.PieceLists[SideToInd(oppSide)] = append(state.PieceLists[SideToInd(oppSide)], capturedPos)
+		state.PieceLists[SideToInd[oppSide]] = append(state.PieceLists[SideToInd[oppSide]], capturedPos)
 	}
 
 	//move counts
@@ -421,7 +413,7 @@ func (state *State) ReverseMove(move *Move, capturedPiece Piece, isEnPassant boo
 	state.EnPassantPos = oldEnPassantPos
 
 	if selfStartPiece&King > 0 {
-		state.KingPos[SideToInd(selfSide)] = move.Start
+		state.KingPos[SideToInd[selfSide]] = move.Start
 	}
 
 	//castling rights
@@ -444,9 +436,9 @@ func (state *State) ReverseMove(move *Move, capturedPiece Piece, isEnPassant boo
 			state.Board[rookPos.X][rookPos.Y] = state.Board[newRookPos.X][newRookPos.Y]
 			state.Board[newRookPos.X][newRookPos.Y] = NilPiece
 
-			for i, p := range state.PieceLists[SideToInd(selfSide)] {
+			for i, p := range state.PieceLists[SideToInd[selfSide]] {
 				if p == newRookPos {
-					state.PieceLists[SideToInd(selfSide)][i] = rookPos
+					state.PieceLists[SideToInd[selfSide]][i] = rookPos
 					break
 				}
 			}
@@ -465,7 +457,7 @@ func (state *State) GenMoves() []*Move { //all valid moves
 	for _, pseudoMove := range pseudoMoves {
 		capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights := state.RunMove(pseudoMove)
 
-		if !state.IsAttacked(state.KingPos[SideToInd(selfSide)], OppSide(selfSide)) {
+		if !state.IsAttacked(state.KingPos[SideToInd[selfSide]], OppSide(selfSide)) {
 			validMoves = append(validMoves, pseudoMove)
 		}
 

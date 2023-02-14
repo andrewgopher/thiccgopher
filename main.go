@@ -5,10 +5,13 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"thiccgopher/boolwrapper"
+	"thiccgopher/deepcopy"
 	"thiccgopher/engine"
 	"thiccgopher/game"
 	"thiccgopher/notation"
@@ -19,9 +22,6 @@ const (
 	name   = "thiccgopher"
 	author = "andrewgopher"
 )
-
-var engineChan chan game.Move = make(chan game.Move)
-var currState *game.State
 
 var scanner *bufio.Scanner = bufio.NewScanner(os.Stdin)
 var logFileName string
@@ -38,17 +38,19 @@ func GetInputLn() string {
 	return ""
 }
 
-func setPosition(options []string) {
+func setPosition(options []string) *game.State {
+	var state *game.State
 	if options[0] == "startpos" {
-		currState = game.NewState()
+		state = game.NewState()
 	} else {
-		currState = notation.ParseFenString(options[0])
+		state = notation.ParseFenString(options[0])
 	}
 	if len(options) > 2 {
 		for i := 2; i < len(options); i++ {
-			currState.RunMove(notation.ParseMoveString(options[i], currState.SideToMove))
+			state.RunMove(notation.ParseMoveString(options[i], state.SideToMove))
 		}
 	}
+	return state
 }
 
 func Perft(state *game.State, depth int) uint64 {
@@ -70,10 +72,33 @@ func Perft(state *game.State, depth int) uint64 {
 	}
 }
 
+func StopAfterDuration(timeLimit time.Duration, isSearching *boolwrapper.BoolWrapper) {
+	time.Sleep(timeLimit)
+	isSearching.Val = false
+}
+
+func ProcessSearch(state *game.State, timeLimit time.Duration, moveChan chan *game.Move, isSearching *boolwrapper.BoolWrapper) {
+	copiedStateIface, _ := deepcopy.Anything(state)
+	go engine.IterativeDeepening(copiedStateIface.(*game.State), moveChan, isSearching)
+	go StopAfterDuration(timeLimit, isSearching)
+	for isSearching.Val {
+
+	}
+	for len(moveChan) > 1 {
+		<-moveChan
+	}
+	bestMove := <-moveChan
+	fmt.Println("bestmove", notation.MoveToUCIString(bestMove))
+	isSearching.Val = false
+}
+
 func main() {
+	var state *game.State
+	var moveChan chan *game.Move = make(chan *game.Move, 1000)
+	isSearching := &boolwrapper.BoolWrapper{Val: false}
+
 	flag.StringVar(&logFileName, "logFile", "", "")
 	flag.Parse()
-	logFileName = "/tmp/thicclog.txt"
 
 	if logFileName != "" {
 		logFile, _ = os.Create(logFileName)
@@ -103,8 +128,17 @@ func main() {
 		input = GetInputLn()
 		tokens := strings.Split(input, " ")
 		command := tokens[0]
+		if isSearching.Val {
+			switch command {
+			case "quit":
+				os.Exit(0)
+			case "stop":
+				isSearching.Val = false
+			}
+			continue
+		}
 		switch command {
-		case "quit", "stop":
+		case "quit":
 			os.Exit(0)
 		case "position":
 			options := []string{}
@@ -119,17 +153,17 @@ func main() {
 					options = append(options, tokens[8:]...)
 				}
 			}
-			setPosition(options)
+			state = setPosition(options)
 		case "go":
 			if len(tokens) > 1 && tokens[1] == "perft" {
 				depth, _ := strconv.Atoi(tokens[2])
-				moves := currState.GenMoves()
+				moves := state.GenMoves()
 				var totalPerft uint64 = 0
 				for _, m := range moves {
-					capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights := currState.RunMove(m)
-					currPerft := Perft(currState, depth-1)
+					capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights := state.RunMove(m)
+					currPerft := Perft(state, depth-1)
 					fmt.Println(notation.MoveToUCIString(m), currPerft)
-					currState.ReverseMove(m, capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights)
+					state.ReverseMove(m, capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights)
 					totalPerft += currPerft
 				}
 				fmt.Println(totalPerft)
@@ -159,22 +193,28 @@ func main() {
 					}
 				}
 
-				var timeLeft time.Duration = time.Second * 10 //if the command is only "go" for debugging purposes
+				var timeLimit time.Duration
+				var timeLeft time.Duration
 				var timeInc time.Duration
-				if currState.SideToMove == game.White {
+
+				if state.SideToMove == game.White {
 					timeLeft = time.Duration(whiteTime) * time.Millisecond
 					timeInc = time.Duration(whiteInc) * time.Millisecond
 				} else {
 					timeLeft = time.Duration(blackTime) * time.Millisecond
 					timeInc = time.Duration(blackInc) * time.Millisecond
 				}
-				bestMove := engine.Search(currState, (timeLeft+timeInc*25)/25)
-				fmt.Println("bestmove", notation.MoveToUCIString(bestMove))
-				staticEval, _ := engine.Eval(currState)
 
-				if logFile != nil {
-					fmt.Fprintf(logFile, "static eval: %v\n", staticEval)
+				if timeLeft == 0 {
+					timeLimit = math.MaxInt64
+				} else {
+					timeLimit = timeLeft/40 + timeInc
+					if timeLimit > timeLeft*9/10 {
+						timeLimit = timeLeft * 9 / 10
+					}
 				}
+				isSearching.Val = true
+				go ProcessSearch(state, timeLimit, moveChan, isSearching)
 			}
 		case "ucinewgame":
 		case "isready":

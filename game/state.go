@@ -14,14 +14,16 @@ const (
 	Black   Side = 128
 )
 
-var Sides [2]Side = [2]Side{White, Black}
-
 const (
 	WhiteKingSide CastleRight = 1 << iota
 	WhiteQueenSide
 	BlackKingSide
 	BlackQueenSide
 )
+
+var Sides [2]Side = [2]Side{White, Black}
+var Pieces [6]Piece = [6]Piece{Pawn, Knight, Bishop, Rook, Queen, King}
+var CastleRights [4]CastleRight = [4]CastleRight{WhiteKingSide, WhiteQueenSide, BlackKingSide, BlackQueenSide}
 
 func OppSide(side Side) Side {
 	if side == White {
@@ -38,6 +40,10 @@ func PieceSide(piece Piece) Side {
 func PieceOnly(piece Piece) Piece {
 	return piece & (^White) & (^Black)
 }
+
+var SideToInd map[Side]int = map[uint8]int{White: 0, Black: 1}
+var PieceToInd map[Piece]int = map[Piece]int{Pawn: 0, Knight: 1, Bishop: 2, Rook: 3, Queen: 4, King: 5}
+var CastleRightToInd map[CastleRight]int = map[CastleRight]int{WhiteKingSide: 0, WhiteQueenSide: 1, BlackKingSide: 2, BlackQueenSide: 3}
 
 const (
 	NilPiece Piece = 0
