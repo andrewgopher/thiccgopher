@@ -24,14 +24,14 @@ const (
 )
 
 var scanner *bufio.Scanner = bufio.NewScanner(os.Stdin)
-var logFileName string
-var logFile io.Writer
+var inputLogFileName string
+var inputLogFile io.Writer
 
 func GetInputLn() string {
 	if scanner.Scan() {
 		line := scanner.Text()
-		if logFile != nil {
-			fmt.Fprintln(logFile, line)
+		if inputLogFile != nil {
+			fmt.Fprintln(inputLogFile, line)
 		}
 		return line
 	}
@@ -93,15 +93,15 @@ func ProcessSearch(state *game.State, timeLimit time.Duration, moveChan chan *ga
 }
 
 func main() {
+	flag.StringVar(&inputLogFileName, "inputLogFile", "", "")
+	flag.Parse()
+
 	var state *game.State
 	var moveChan chan *game.Move = make(chan *game.Move, 1000)
 	isSearching := &boolwrapper.BoolWrapper{Val: false}
 
-	flag.StringVar(&logFileName, "logFile", "", "")
-	flag.Parse()
-
-	if logFileName != "" {
-		logFile, _ = os.Create(logFileName)
+	if inputLogFileName != "" {
+		inputLogFile, _ = os.Create(inputLogFileName)
 	}
 
 	rand.Seed(time.Now().UnixNano())
@@ -140,6 +140,8 @@ func main() {
 		switch command {
 		case "quit":
 			os.Exit(0)
+		case "stop":
+
 		case "position":
 			options := []string{}
 			if tokens[1] == "startpos" {

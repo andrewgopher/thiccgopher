@@ -466,3 +466,21 @@ func (state *State) GenMoves() []*Move { //all valid moves
 
 	return validMoves
 }
+
+func (state *State) GenCaptures() []*Move { //all valid moves
+	pseudoMoves := state.GenPseudoMoves()
+	validMoves := []*Move{}
+	selfSide := state.SideToMove
+
+	for _, pseudoMove := range pseudoMoves {
+		capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights := state.RunMove(pseudoMove)
+
+		if !state.IsAttacked(state.KingPos[SideToInd[selfSide]], OppSide(selfSide)) && capturedPiece != NilPiece {
+			validMoves = append(validMoves, pseudoMove)
+		}
+
+		state.ReverseMove(pseudoMove, capturedPiece, isEnPassant, oldFiftyCount, oldEnPassantPos, oldCastleRights)
+	}
+
+	return validMoves
+}
