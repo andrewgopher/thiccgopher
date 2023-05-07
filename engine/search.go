@@ -8,8 +8,11 @@ import (
 	"thiccgopher/sliceutils"
 )
 
+var currNodes = 0
+
 type pvEntry struct {
 	move  *game.Move
+	eval  int
 	depth int
 }
 
@@ -18,6 +21,7 @@ var bitTables1 = hash.NewBitTables()
 var bitTables2 = hash.NewBitTables()
 
 func CaptureSearch(state *game.State, alpha, beta int) int {
+	currNodes++
 	standPat, isDecisive := Eval(state)
 	if standPat >= beta {
 		return beta
@@ -52,7 +56,9 @@ func IterativeDeepening(state *game.State, moveChan chan *game.Move, isSearching
 	currDepth := 2
 	moves := state.GenMoves()
 	var bestMove *game.Move
+	// var bestEval int
 	for {
+		currNodes = 0
 		// currDepthStartTime := time.Now()
 		_, bestMove = Minimax(state, currDepth, -BigEval, BigEval, isSearching)
 		if !isSearching.Val {
@@ -68,12 +74,13 @@ func IterativeDeepening(state *game.State, moveChan chan *game.Move, isSearching
 		moves = sliceutils.RemoveByIndex(moves, bestMoveInd)
 		moves = append([]*game.Move{bestMove}, moves...)
 		moveChan <- bestMove
-		// fmt.Println(currDepth, time.Since(currDepthStartTime))
+		// fmt.Println(currDepth, time.Since(currDepthStartTime), float64(currNodes)/float64(time.Since(currDepthStartTime).Seconds()), notation.MoveToUCIString(bestMove), bestEval)
 		currDepth++
 	}
 }
 
 func Minimax(state *game.State, depth int, alpha, beta int, isSearching *boolwrapper.BoolWrapper) (int, *game.Move) {
+	currNodes++
 	currSide := state.SideToMove
 	currHash1 := hash.Hash(state, bitTables1)
 	currHash2 := hash.Hash(state, bitTables2)
@@ -93,9 +100,17 @@ func Minimax(state *game.State, depth int, alpha, beta int, isSearching *boolwra
 		scoreB := PieceValues[game.PieceOnly(state.Board[moves[b].End.X][moves[b].End.Y])] - PieceValues[game.PieceOnly(state.Board[moves[b].Start.X][moves[b].Start.Y])]/100
 		return scoreA > scoreB
 	})
-	pv, hasStoredPV := PVS[currHash1]
+	pvHash1, hasStoredPV := PVS[currHash1]
+	var pv *pvEntry
 	if hasStoredPV {
-		moves = append([]*game.Move{pv[currHash2].move}, moves...)
+		pv, hasStoredPV = pvHash1[currHash2]
+		if hasStoredPV {
+			if pv.depth >= depth {
+				return pv.eval, pv.move
+			} else {
+				moves = append([]*game.Move{pv.move}, moves...)
+			}
+		}
 	}
 	selfSide := state.SideToMove
 	for _, m := range moves {
@@ -132,13 +147,11 @@ func Minimax(state *game.State, depth int, alpha, beta int, isSearching *boolwra
 	if bestEval < -CheckmateEvalSplit {
 		bestEval += 1
 	}
-	if bestMove != nil && (!hasStoredPV || depth > pv[currHash2].depth) {
-		if hasStoredPV {
-			PVS[currHash1][currHash2] = &pvEntry{bestMove, depth}
-		} else {
+	if bestMove != nil && (!hasStoredPV || depth > pv.depth) {
+		if !hasStoredPV {
 			PVS[currHash1] = make(map[uint64]*pvEntry)
-			PVS[currHash1][currHash2] = &pvEntry{bestMove, depth}
 		}
+		PVS[currHash1][currHash2] = &pvEntry{bestMove, bestEval, depth}
 	}
 	return bestEval, bestMove
 }
