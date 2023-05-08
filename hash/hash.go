@@ -66,7 +66,11 @@ func Hash(state *game.State, bitTables *BitTables) uint64 { //TODO: return two h
 	}
 
 	//side to move
-	result ^= bitTables.castleRightTable[game.SideToInd[state.SideToMove]]
+	for i := 0; i < 4; i++ {
+		if state.CastleRights&(1<<i) > 0 {
+			result ^= bitTables.castleRightTable[i]
+		}
+	}
 	result ^= bitTables.sideToMoveTable[game.SideToInd[state.SideToMove]]
 	//TODO: move count, fifty move count
 
