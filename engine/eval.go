@@ -34,6 +34,7 @@ func GetKingStatus(state *game.State, side game.Side) (bool, bool) {
 	return isInCheck, isSurrounded
 }
 
+// TODO: turn off piece tables for endgame
 func Eval(state *game.State) (int, bool) { //int is eval, bool is if decisive
 	side := state.SideToMove
 	numMoves := len(state.GenMoves())
@@ -85,3 +86,5 @@ func Eval(state *game.State) (int, bool) { //int is eval, bool is if decisive
 
 	return materialEval + pieceMapEval/2, false
 }
+
+//position startpos moves b1c3 e7e6 e2e4 b8c6 d2d4 f8b4 g1e2 g8f6 e4e5 f6e4 c1e3 d7d5 d1d3 a7a5 e1c1 c8d7 c3e4 d5e4 d3e4 h7h5 c1b1 a5a4 a2a3 f7f5 e5f6 b4d6 e4g6 e8f8 g6g7 f8e8 f6f7 e8e7

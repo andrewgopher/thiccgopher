@@ -23,11 +23,12 @@ func MoveToUCIString(move *game.Move) string {
 	result := fmt.Sprintf("%v%v%v%v", string(IntToFile(move.Start.Y)), string(IntToRank(move.Start.X)), string(IntToFile(move.End.Y)), string(IntToRank(move.End.X)))
 
 	if move.Promotion != game.NilPiece {
-		if move.Promotion&game.White > 0 {
-			move.Promotion -= game.White
-			move.Promotion += game.Black
+		promotionPiece := move.Promotion
+		if promotionPiece&game.White > 0 {
+			promotionPiece -= game.White
+			promotionPiece += game.Black
 		}
-		result += string(PieceToByte[move.Promotion])
+		result += string(PieceToByte[promotionPiece])
 	}
 	return result
 }

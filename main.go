@@ -95,6 +95,7 @@ func ProcessSearch(state *game.State, timeLimit time.Duration, moveChan chan *ga
 func main() {
 	flag.StringVar(&inputLogFileName, "inputLogFile", "", "")
 	flag.Parse()
+	inputLogFileName = "/tmp/thicclog.txt"
 
 	var state *game.State
 	var moveChan chan *game.Move = make(chan *game.Move, 1000)
@@ -221,6 +222,9 @@ func main() {
 		case "ucinewgame":
 		case "isready":
 			fmt.Println("readyok")
+		case "eval":
+			eval, isDecisive := engine.Eval(state)
+			fmt.Println(eval, isDecisive)
 		default:
 			fmt.Println("Unsupported command")
 			os.Exit(1)
